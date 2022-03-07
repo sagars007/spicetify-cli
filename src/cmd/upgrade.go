@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/khanhas/spicetify-cli/src/utils"
+	"github.com/spicetify/spicetify-cli/src/utils"
 )
 
 func Upgrade(currentVersion string) {
@@ -28,17 +28,29 @@ func Upgrade(currentVersion string) {
 		return
 	}
 
-	var assetURL string = "https://github.com/khanhas/spicetify-cli/releases/download/v" + tagName + "/spicetify-" + tagName
+	var assetURL string = "https://github.com/spicetify/spicetify-cli/releases/download/v" + tagName + "/spicetify-" + tagName
 	var location string
 	switch runtime.GOOS {
 	case "windows":
-		assetURL += "-windows-x64.zip"
+		if runtime.GOARCH == "386" {
+			assetURL += "-windows-x32.zip"
+		} else {
+			assetURL += "-windows-x64.zip"
+		}
 		location = os.TempDir() + "/spicetify-" + tagName + ".zip"
 	case "linux":
-		assetURL += "-linux-amd64.tar.gz"
+		if runtime.GOARCH == "arm64" {
+			assetURL += "-linux-arm64.tar.gz"
+		} else {
+			assetURL += "-linux-amd64.tar.gz"
+		}
 		location = os.TempDir() + "/spicetify-" + tagName + ".tar.gz"
 	case "darwin":
-		assetURL += "-darwin-amd64.tar.gz"
+		if runtime.GOARCH == "arm64" {
+			assetURL += "-darwin-arm64.tar.gz"
+		} else {
+			assetURL += "-darwin-amd64.tar.gz"
+		}
 		location = os.TempDir() + "/spicetify-" + tagName + ".tar.gz"
 	}
 

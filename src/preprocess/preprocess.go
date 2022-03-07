@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/khanhas/spicetify-cli/src/utils"
+	"github.com/spicetify/spicetify-cli/src/utils"
 )
 
 // Flag enables/disables preprocesses to be applied
@@ -37,7 +37,7 @@ type jsMap struct {
 }
 
 func readRemoteCssMap(tag string, cssTranslationMap *map[string]string) error {
-	var cssMapURL string = "https://raw.githubusercontent.com/khanhas/spicetify-cli/" + tag + "/css-map.json"
+	var cssMapURL string = "https://raw.githubusercontent.com/spicetify/spicetify-cli/" + tag + "/css-map.json"
 	cssMapResp, err := http.Get(cssMapURL)
 	if err != nil {
 		return err
@@ -282,20 +282,20 @@ func exposeAPIs_main(input string) string {
 	// React Hook
 	utils.ReplaceOnce(
 		&input,
-		`\w+=\(\w+,(\w+)\.lazy\)\(?\(\(\)=>\w+\.\w+\((?:\d+)?\)\.then\(\w+\.bind\(\w+,\w+\)\)\)\)?;`,
-		`${0}Spicetify.React=${1};`)
+		`(\w+=\(\w+,(\w+)\.lazy\)\(?\((?:\(\)=>|function\(\)\{return )\w+\.\w+\((?:\d+)?\)\.then\(\w+\.bind\(\w+,\w+\)\)\}?\)\)?),`,
+		`${1};Spicetify.React=${2};var `)
 
 	utils.Replace(
 		&input,
 		`"data-testid":`,
 		`"":`)
 
-	reAllAPIPromises := regexp.MustCompile(`return ?{version:\w+,(?:\w+:[\w!,().]+,)+(?:get\w+:(?:async)?\(\)=>[()\w=>{} ]+,)?((?:get\w+:\(\)=>(?:[\w$]+|[(){}]+),?)+)}`)
+	reAllAPIPromises := regexp.MustCompile(`return ?(?:function\(\))?\{(?:[ \w\.,\(\)\{\}]+)?((?:get\w+:(?:\(\)=>|function\(\)\{return ?)(?:[\w$]+|[(){}]+)\}?,?)+)[\}\)]+;`)
 	allAPIPromises := reAllAPIPromises.FindAllStringSubmatch(input, -1)
 	for _, found := range allAPIPromises {
 		splitted := strings.Split(found[1], ",")
 		if len(splitted) > 15 { // Actual number is about 34
-			matchMap := regexp.MustCompile(`get(\w+):\(\)=>([\w$]+|[(){}]+),?`)
+			matchMap := regexp.MustCompile(`get(\w+):(?:\(\)=>|function\(\)\{return ?)([\w$]+|\{\})\}?,?`)
 			code := "Spicetify.Platform={};"
 			for _, apiFunc := range splitted {
 				matches := matchMap.FindStringSubmatch(apiFunc)
@@ -329,8 +329,8 @@ Spicetify.React.useEffect(() => {
 	// React Component: Context Menu and Right Click Menu
 	utils.Replace(
 		&input,
-		`=(\w+)=>(\w+\(\)\.createElement\(([\w\.]+),\w*\((\w+,[\w\.]+)?\)\(\{\},\w+,\{action:"open",trigger:"right-click"\}\)\))`,
-		`=Spicetify.ReactComponent.RightClickMenu=${1}=>${2};Spicetify.ReactComponent.ContextMenu=${3}`)
+		`=(?:function\()?(\w+)(?:=>|\)\{return )(\w+\(\)\.createElement\(([\w\.]+),\w*\((\w+,[\w\.]+)?\)\(\{\},\w+,\{action:"open",trigger:"right-click"\}\)\))\}?`,
+		`=Spicetify.ReactComponent.RightClickMenu=${1}=>${2};Spicetify.ReactComponent.ContextMenu=${3};`)
 
 	// React Component: Context Menu - Menu
 	utils.Replace(
@@ -565,7 +565,7 @@ func FetchLatestTagMatchingVersion(version string) (string, error) {
 	if version == "Dev" {
 		return "Dev", nil
 	}
-	res, err := http.Get("https://api.github.com/repos/khanhas/spicetify-cli/releases")
+	res, err := http.Get("https://api.github.com/repos/spicetify/spicetify-cli/releases")
 	if err != nil {
 		return "", err
 	}
